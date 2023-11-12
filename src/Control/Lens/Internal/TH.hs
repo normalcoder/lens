@@ -22,10 +22,10 @@
 ----------------------------------------------------------------------------
 module Control.Lens.Internal.TH
   ( module Control.Lens.Internal.TH
-#if MIN_VERSION_template_haskell(2,21,0) || MIN_VERSION_th_abstraction(0,6,0)
-  , D.TyVarBndrVis
-  , D.bndrReq
-#endif
+-- #if MIN_VERSION_template_haskell(2,21,0) || MIN_VERSION_th_abstraction(0,6,0)
+--   , D.TyVarBndrVis
+--   , D.bndrReq
+-- #endif
   ) where
 
 import Control.Lens.Iso
