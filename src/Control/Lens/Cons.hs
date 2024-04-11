@@ -27,6 +27,7 @@ module Control.Lens.Cons
   , cons
   , uncons
   , _head, _tail
+  , (<|~), (<|=), (<<|~), (<<|=)
   , pattern (:<)
   -- * Snoc
   , Snoc(..)
@@ -34,14 +35,17 @@ module Control.Lens.Cons
   , snoc
   , unsnoc
   , _init, _last
+  , (|>~), (|>=), (<|>~), (<|>=)
   , pattern (:>)
 
   ) where
 
 import Control.Lens.Equality (simply)
 import Control.Lens.Fold
+import Control.Lens.Lens
 import Control.Lens.Prism
 import Control.Lens.Review
+import Control.Lens.Setter
 import Control.Lens.Tuple
 import Control.Lens.Type
 import qualified Data.ByteString      as StrictB
@@ -62,6 +66,7 @@ import           Data.Vector.Unboxed (Unbox)
 import qualified Data.Vector.Unboxed as Unbox
 import           Data.Word
 import           Control.Applicative (ZipList(..))
+import           Control.Monad.State.Class as State
 import           Prelude
 
 -- $setup
@@ -77,6 +82,8 @@ import           Prelude
 
 infixr 5 <|, `cons`
 infixl 5 |>, `snoc`
+infixr 4 <|~, |>~, <<|~, <|>~
+infix  4 <|=, |>=, <<|=, <|>=
 
 pattern (:<) :: Cons b b a a => a -> b -> b
 pattern (:<) a s <- (preview _Cons -> Just (a,s)) where
@@ -323,6 +330,35 @@ _tail :: Cons s s a a => Traversal' s s
 _tail = _Cons._2
 {-# INLINE _tail #-}
 
+-- | Modify the target of a 'Cons' value by using @('<|')@.
+--
+-- >>> (["world"], ["lens"]) & _1 <|~ "hello"
+-- (["hello","world"],["lens"])
+(<|~) :: Cons b b a a => ASetter s t b b -> a -> s -> t
+l <|~ n = over l (n <|)
+{-# INLINE (<|~) #-}
+
+-- | Modify the target(s) of a 'Lens'', 'Iso', 'Setter' or 'Traversal' by using @('<|')@.
+(<|=) :: (MonadState s m, Cons b b a a) => ASetter s s b b -> a -> m ()
+l <|= a = State.modify (l <|~ a)
+{-# INLINE (<|=) #-}
+
+-- | ('<|') a 'Cons' value onto the end of the target of a 'Lens' and
+-- return the result.
+--
+-- When you do not need the result of the operation, ('Control.Lens.Cons.<|~') is more flexible.
+(<<|~) :: Cons b b a a => LensLike ((,) b) s t b b -> a -> s -> (b, t)
+l <<|~ m = l <%~ (m <|)
+{-# INLINE (<<|~) #-}
+
+-- | ('<|') a 'Semigroup' value onto the end of the target of a 'Lens' into
+-- your 'Monad''s state and return the result.
+--
+-- When you do not need the result of the operation, ('Control.Lens.Cons.<|=') is more flexible.
+(<<|=) :: (MonadState s m, Cons b b a a) => LensLike ((,) b) s s b b -> a -> m b
+l <<|= r = l <%= (r <|)
+{-# INLINE (<<|=) #-}
+
 ------------------------------------------------------------------------------
 -- Snoc
 ------------------------------------------------------------------------------
@@ -538,3 +574,32 @@ snoc = curry (simply review _Snoc)
 unsnoc :: Snoc s s a a => s -> Maybe (s, a)
 unsnoc = simply preview _Snoc
 {-# INLINE unsnoc #-}
+
+-- | Modify the target of a 'Cons' value by using @('|>')@.
+--
+-- >>> (["world"], ["lens"]) & _1 |>~ "hello"
+-- (["world","hello"],["lens"])
+(|>~) :: Snoc b b a a => ASetter s t b b -> a -> s -> t
+l |>~ n = over l (|> n)
+{-# INLINE (|>~) #-}
+
+-- | Modify the target(s) of a 'Lens'', 'Iso', 'Setter' or 'Traversal' by using @('|>')@.
+(|>=) :: (MonadState s m, Snoc b b a a) => ASetter s s b b -> a -> m ()
+l |>= a = State.modify (l |>~ a)
+{-# INLINE (|>=) #-}
+
+-- | ('|>') a 'Cons' value onto the end of the target of a 'Lens' and
+-- return the result.
+--
+-- When you do not need the result of the operation, ('Control.Lens.Cons.|>~') is more flexible.
+(<|>~) :: Snoc b b p p => LensLike ((,) b) s t b b -> p -> s -> (b, t)
+l <|>~ m = l <%~ (|> m)
+{-# INLINE (<|>~) #-}
+
+-- | ('|>') a 'Semigroup' value onto the end of the target of a 'Lens' into
+-- your 'Monad''s state and return the result.
+--
+-- When you do not need the result of the operation, ('Control.Lens.Cons.|>=') is more flexible.
+(<|>=) :: (MonadState s m, Snoc b b p p) => LensLike ((,) b) s s b b -> p -> m b
+l <|>= r = l <%= (|> r)
+{-# INLINE (<|>=) #-}

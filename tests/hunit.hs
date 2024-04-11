@@ -231,6 +231,66 @@ case_append_to_state_record_field_and_access_new_value = do
     test = points <<>= [ origin ]
     trig' = trig { _points = (trig & _points) <> [ origin ] }
 
+case_prepend_to_record_field =
+  (trig & points <>:~ [ origin ])
+    @?= trig { _points = [ origin ] <> (trig & _points) }
+
+case_prepend_to_state_record_field = do
+  runState test trig @?= ((), trig')
+  where
+    test = points <>:= [ origin ]
+    trig' = trig { _points = [ origin ] <> (trig & _points) }
+
+case_prepend_to_record_field_and_access_new_value =
+  (trig & points <<>:~ [ origin ])
+    @?= ([ origin ] <> _points trig, trig { _points = [ origin ] <> (trig & _points) })
+
+case_prepend_to_state_record_field_and_access_new_value = do
+  runState test trig @?= ([ origin ] <> _points trig, trig')
+  where
+    test = points <<>:= [ origin ]
+    trig' = trig { _points = [ origin ] <> (trig & _points) }
+
+case_cons_to_record_field =
+  (trig & points <|~ origin)
+    @?= trig { _points = origin : (trig & _points) }
+
+case_cons_to_state_record_field = do
+  runState test trig @?= ((), trig')
+  where
+    test = points <|= origin
+    trig' = trig { _points = origin : (trig & _points) }
+
+case_cons_to_record_field_and_access_new_value =
+  (trig & points <<|~ origin)
+    @?= (origin : _points trig, trig { _points = origin : (trig & _points) })
+
+case_cons_to_state_record_field_and_access_new_value =
+  runState test trig @?= ([ origin ] <> _points trig, trig')
+  where
+    test = points <<|= origin
+    trig' = trig { _points = origin : (trig & _points) }
+
+case_snoc_to_record_field =
+  (trig & points |>~ origin)
+    @?= trig { _points = (trig & _points) `snoc` origin }
+
+case_snoc_to_state_record_field = do
+  runState test trig @?= ((), trig')
+  where
+    test = points |>= origin
+    trig' = trig { _points = (trig & _points) `snoc` origin }
+
+case_snoc_to_record_field_and_access_new_value =
+  (trig & points <|>~ origin)
+    @?= (_points trig `snoc` origin, trig { _points = (trig & _points) `snoc` origin })
+
+case_snoc_to_state_record_field_and_access_new_value =
+  runState test trig @?= (_points trig <> [ origin ], trig')
+  where
+    test = points <|>= origin
+    trig' = trig { _points = (trig & _points) `snoc` origin }
+
 case_append_to_record_field_and_access_old_value =
   (trig & points <<%~ (<>[origin]))
     @?= (_points trig, trig { _points = (trig & _points) <> [ origin ] })
@@ -323,8 +383,20 @@ main = defaultMain
     , testCase "increment state record field" case_increment_state_record_field
     , testCase "append to record field" case_append_to_record_field
     , testCase "append to state record field" case_append_to_state_record_field
+    , testCase "prepend to record field" case_prepend_to_record_field
+    , testCase "prepend to state record field" case_prepend_to_state_record_field
+    , testCase "cons to record field" case_cons_to_record_field
+    , testCase "cons to state record field" case_cons_to_state_record_field
+    , testCase "snoc to record field" case_snoc_to_record_field
+    , testCase "snoc to state record field" case_snoc_to_state_record_field
     , testCase "append to record field and access new value" case_append_to_record_field_and_access_new_value
     , testCase "append to state record field and access new value" case_append_to_state_record_field_and_access_new_value
+    , testCase "prepend to record field and access new value" case_prepend_to_record_field_and_access_new_value
+    , testCase "prepend to state record field and access new value" case_prepend_to_state_record_field_and_access_new_value
+    , testCase "cons to record field and access new value" case_cons_to_record_field_and_access_new_value
+    , testCase "cons to state record field and access new value" case_cons_to_state_record_field_and_access_new_value
+    , testCase "snoc to record field and access new value" case_snoc_to_record_field_and_access_new_value
+    , testCase "snoc to state record field and access new value" case_snoc_to_state_record_field_and_access_new_value
     , testCase "append to record field and access old value" case_append_to_record_field_and_access_old_value
     , testCase "append to state record field and access old value" case_append_to_state_record_field_and_access_old_value
     , testCase "read maybe map entry" case_read_maybe_map_entry
